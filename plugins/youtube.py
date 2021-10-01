@@ -3,7 +3,7 @@ from pyrogram import Client, Filters, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram import Message
 from bot import user_time
 from config import youtube_next_fetch
-from helper.ytdlfunc import extractYt, create_audio_button
+from helper.ytdlfunc import extractYt, create_audio_button, create_video_button
 import wget
 import os
 from PIL import Image
@@ -27,5 +27,7 @@ async def ytdl(_, message: Message):
     url = message.text.strip()
     await message.reply_chat_action("typing")
     title, thumbnail, videoList, audioList = extractYt(url)
-    buttons = InlineKeyboardMarkup(list(create_audio_button(audioList)))
+    # buttons = InlineKeyboardMarkup(list(create_audio_button(audioList)))
+    buttons = InlineKeyboardMarkup(list(create_video_button(videoList)))
+
     await message.reply(thumbnail, reply_markup=buttons)

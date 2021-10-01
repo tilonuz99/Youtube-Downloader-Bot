@@ -27,15 +27,13 @@ def extractYt(yturl):
         audioList = []
 
         r = ydl.extract_info(yturl, download=False)
-        for format in r['formats'][::-1]:
-            if 'audio' in format['format']:
-                pass
-            if not "dash" in str(format['format']).lower():
+        for format in sorted(r['formats'], key=lambda k: k['format_note'], reverse=True):
+            if not "dash" in str(format['format']).lower() and not "p60" in str(format['format']).lower() and not "p30" in str(format['format']).lower():
                 if 'audio' in format['format']:
                     audioList.append({"format": f"{format['abr']}k - {humanbytes(format['filesize'])}", "format_id": format['format_id'],
                                         "yturl": yturl})
                 else:
-                    videoList[format['format_note']] = {"format": f"{str(format['format']).split('-')[1].strip()} - {humanbytes(format['filesize'])}", "format_id": format['format_id'],
+                    videoList[format['format_note']] = {"format": f"{str(format['format']).split('-')[1].strip()} - {humanbytes(format['filesize'])}", 'filesize': format['filesize'],"format_id": format['format_id'],
                                 "yturl": yturl}
 
         return r['title'], r['thumbnail'], videoList, audioList
@@ -46,6 +44,17 @@ def map_audio_button(item):
 
 def create_audio_button(audio_list):
     return map(map_audio_button, audio_list)
+
+
+def map_video_button(item):
+    text = item['format']
+    return [InlineKeyboardButton(text, callback_data=f"ytdata||audio||{item['format_id']}||{item['yturl']}")]
+
+def create_video_button(video_list):
+    item_values = video_list.values()
+    lists = [video for video in item_values]
+    return map(map_video_button, sorted(lists, key=lambda k: k['filesize'], reverse=True))
+
 
 async def downloadvideocli(command_to_exec):
     process = await asyncio.create_subprocess_exec(
