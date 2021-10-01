@@ -45,12 +45,13 @@ async def catch_youtube_dldata(c, q):
     # Callback Data Check
     yturl = cb_data.split("||")[-1]
     format_id = cb_data.split("||")[-2]
-    thumb_image_path = "/app/downloads" + \
+    thumb_image_path = "downloads" + \
         "/" + str(q.message.chat.id) + ".jpg"
     print(thumb_image_path)
+    width = 360
+    height = 340
+
     if os.path.exists(thumb_image_path):
-        width = 0
-        height = 0
         metadata = extractMetadata(createParser(thumb_image_path))
         #print(metadata)
         if metadata.has("width"):

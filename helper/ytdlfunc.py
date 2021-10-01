@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
-from pyrogram import Client, Filters, StopPropagation, InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram import InlineKeyboardButton, InlineKeyboardMarkup
 import youtube_dl
 from utils.util import humanbytes
 import asyncio
-
+from json import dumps
 
 def buttonmap(item):
     quality = item['format']
@@ -21,58 +21,32 @@ def create_buttons(quailitylist):
 
 # extract Youtube info
 def extractYt(yturl):
-    ydl = youtube_dl.YoutubeDL()
+    ydl = youtube_dl.YoutubeDL({'cachedir': False})
     with ydl:
-        qualityList = []
+        videoList = {}
+        audioList = []
+
         r = ydl.extract_info(yturl, download=False)
-        for format in r['formats']:
-            # Filter dash video(without audio)
+        for format in r['formats'][::-1]:
+            if 'audio' in format['format']:
+                pass
             if not "dash" in str(format['format']).lower():
-                qualityList.append(
-                {"format": format['format'], "filesize": format['filesize'], "format_id": format['format_id'],
-                 "yturl": yturl})
+                if 'audio' in format['format']:
+                    audioList.append({"format": f"{format['abr']}k - {humanbytes(format['filesize'])}", "format_id": format['format_id'],
+                                        "yturl": yturl})
+                else:
+                    videoList[format['format_note']] = {"format": f"{str(format['format']).split('-')[1].strip()} - {humanbytes(format['filesize'])}", "format_id": format['format_id'],
+                                "yturl": yturl}
 
-        return r['title'], r['thumbnail'], qualityList
+        return r['title'], r['thumbnail'], videoList, audioList
 
-
-#  Need to work on progress
-
-# def downloadyt(url, fmid, custom_progress):
-#     ydl_opts = {
-#         'format': f"{fmid}+bestaudio",
-#         "outtmpl": "test+.%(ext)s",
-#         'noplaylist': True,
-#         'progress_hooks': [custom_progress],
-#     }
-#     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-#         ydl.download([url])
-
-
-# https://github.com/SpEcHiDe/AnyDLBot
-
-async def downloadvideocli(command_to_exec):
-    process = await asyncio.create_subprocess_exec(
-        *command_to_exec,
-        # stdout must a pipe to be accessible as process.stdout
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE, )
-    stdout, stderr = await process.communicate()
-    e_response = stderr.decode().strip()
-    t_response = stdout.decode().strip()
-    print(e_response)
-    filename = t_response.split("Merging formats into")[-1].split('"')[1]
-    return filename
 
 
 async def downloadaudiocli(command_to_exec):
     process = await asyncio.create_subprocess_exec(
         *command_to_exec,
-        # stdout must a pipe to be accessible as process.stdout
+
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE, )
     stdout, stderr = await process.communicate()
-    e_response = stderr.decode().strip()
-    t_response = stdout.decode().strip()
-    print("Download error:", e_response)
-
-    return t_response.split("Destination")[-1].split("Deleting")[0].split(":")[-1].strip()
+    
