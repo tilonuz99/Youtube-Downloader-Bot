@@ -40,7 +40,19 @@ def extractYt(yturl):
 
         return r['title'], r['thumbnail'], videoList, audioList
 
+def map_audio_button(item):
+    text = item['format']
+    return [InlineKeyboardButton(text, callback_data=f"ytdata||audio||{item['format_id']}||{item['yturl']}")]
 
+def create_audio_button(audio_list):
+    return map(map_audio_button, audio_list)
+
+async def downloadvideocli(command_to_exec):
+    process = await asyncio.create_subprocess_exec(
+        *command_to_exec,
+
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE, )
 
 async def downloadaudiocli(command_to_exec):
     process = await asyncio.create_subprocess_exec(
@@ -48,5 +60,4 @@ async def downloadaudiocli(command_to_exec):
 
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE, )
-    stdout, stderr = await process.communicate()
     
