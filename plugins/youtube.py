@@ -32,12 +32,13 @@ async def ytdl(_, message: Message):
     img = wget.download(thumbnail)
     im = Image.open(img).convert("RGB")
     output_directory = os.path.join(os.getcwd(), "downloads", str(message.chat.id))
-    print(output_directory)
     if not os.path.isdir(output_directory):
         os.makedirs(output_directory)
     thumb_image_path = f"{output_directory}.jpg"
     im.save(thumb_image_path,"jpeg")
-    await message.reply_photo(thumb_image_path, caption=title, reply_markup=buttons)
+    await message.reply_photo(thumb_image_path, caption=title+'\n\n❔ Iltimos, fayl turini tanlang: 👇', reply_markup=buttons)
+
+
 
 
 
