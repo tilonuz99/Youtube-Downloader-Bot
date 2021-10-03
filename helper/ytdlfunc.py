@@ -1,38 +1,15 @@
 from __future__ import unicode_literals
-from pyrogram import InlineKeyboardButton, InlineKeyboardMarkup
-import youtube_dl
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from youtube_dl import YoutubeDL
+
 from utils.util import humanbytes
-import asyncio
+from asyncio import create_subprocess_exec, subprocess
 from json import dumps
 
-def buttonmap(item):
-    quality = item['format']
-    if "audio" in quality:
-        return [InlineKeyboardButton(f"{quality} 🎵 {humanbytes(item['filesize'])}",
-                                     callback_data=f"ytdata||audio||{item['format_id']}||{item['yturl']}")]
-    else:
-        return [InlineKeyboardButton(f"{quality} 📹 {humanbytes(item['filesize'])}",
-                                     callback_data=f"ytdata||video||{item['format_id']}||{item['yturl']}")]
-
-# Return a array of Buttons
-def create_buttons(quailitylist):
-    return map(buttonmap, quailitylist)
-
-def video_audio_button(url):
-    ydl = youtube_dl.YoutubeDL({'cachedir': False})
-    with ydl:
-        r = ydl.extract_info(url, download=False)
-        thumb_url = r['thumbnail']
-        title = r['title']
-
-    return [
-        [InlineKeyboardButton(f"📹 Video", callback_data=f"select||video||{url}")],
-        [InlineKeyboardButton(f"🎵 Audio", callback_data=f"select||audio||{url}")]
-        ], thumb_url, title,
 
 # extract Youtube info
 def extractYt(yturl):
-    ydl = youtube_dl.YoutubeDL({'cachedir': False})
+    ydl = YoutubeDL({'cachedir': False})
     with ydl:
         videoList = {}
         audioList = []
@@ -61,16 +38,16 @@ def video_button(videos_list):
     return keyboards
 
 async def downloadvideocli(command_to_exec):
-    process = await asyncio.create_subprocess_exec(
+    process = await create_subprocess_exec(
         *command_to_exec,
 
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE, )
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, )
 
 async def downloadaudiocli(command_to_exec):
-    process = await asyncio.create_subprocess_exec(
+    process = await create_subprocess_exec(
         *command_to_exec,
 
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE, )
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, )
     
