@@ -6,16 +6,19 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from bot import user_time
 from config import youtube_next_fetch
 from helper.ytdlfunc import extractYt, video_button
-import wget
-import os
+from helper.instafunc import get_media_url
+
+from wget import download
+from os import path, getcwd
 from PIL import Image
 from utils.util import humanbytes
 
 ytregex = r"^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$"
-
+instaregex = r'^((?:https?:)?\/\/)?((?:www|m)\.)?((?:instagram\.com))(\/(?:p|tv|reel|stories)/(?P<id>[^/?#&]+))'
 
 @Client.on_message(filters.regex(ytregex))
 async def ytdl(_, message: Message):
+    print(message.matches)
     userLastDownloadTime = user_time.get(message.chat.id)
     try:
         if userLastDownloadTime > datetime.now():
@@ -38,17 +41,19 @@ async def ytdl(_, message: Message):
             file_sizes += f"✅ {video['format_note']}:  {humanbytes(file_size)}\n"
     keyboard = video_button(videolist)
     buttons = InlineKeyboardMarkup(list(keyboard))
-    img = wget.download(thumbnail, out=False)
+    img = download(thumbnail, out=False)
     im = Image.open(img).convert("RGB")
-    output_directory = os.path.join(os.getcwd(), "downloads", str(message.chat.id))
+    output_directory = path.join(getcwd(), "downloads", str(message.chat.id))
     thumb_image_path = f"{output_directory}.jpg"
     im.save(thumb_image_path,"jpeg")
     await message.reply_photo(thumb_image_path, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
 
 
 
-
-
-@Client.on_message()
-async def _get_insta(c, message: Message):
-    await message.reply
+@Client.on_message(filters.regex(instaregex))
+async def insta(_, message: Message):
+    media_url, is_video = await get_media_url(message.text)
+    if not is_video:
+        await message.reply_photo(media_url)
+    else:
+        await message.reply_video(media_url)
