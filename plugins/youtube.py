@@ -5,7 +5,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from bot import user_time
 from config import youtube_next_fetch
-from helper.ytdlfunc import extractYt, map_video_button
+from helper.ytdlfunc import extractYt, video_button
 import wget
 import os
 from PIL import Image
@@ -36,9 +36,8 @@ async def ytdl(_, message: Message):
             file_sizes += f"🛑 {video['format_note']}:  {humanbytes(file_size)}\n"
         else:
             file_sizes += f"✅ {video['format_note']}:  {humanbytes(file_size)}\n"
-    keyboard = map_video_button(videolist)
+    keyboard = video_button(videolist)
     buttons = InlineKeyboardMarkup(list(keyboard))
-    
     img = wget.download(thumbnail, out=False)
     im = Image.open(img).convert("RGB")
     output_directory = os.path.join(os.getcwd(), "downloads", str(message.chat.id))

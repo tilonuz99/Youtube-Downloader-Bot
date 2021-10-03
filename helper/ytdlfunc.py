@@ -18,22 +18,21 @@ def extractYt(yturl):
         for format in r['formats']:
             if format['filesize'] is not None:
                 if not "dash" in str(format['format']).lower() and not "p60" in str(format['format']).lower() and not "p30" in str(format['format']).lower():
-                    if 'audio' in format['format']:
-                        audioList.append({"format": f"{format['abr']}k - {humanbytes(format['filesize'])}", "format_id": format['format_id'],
-                                            "yturl": yturl})
-                    else:
-                        videoList[format['format_note']] = {"format": f"📹 {format['format_note']}", 'format_note': format['format_note'], "filesize": format['filesize'],"format_id": format['format_id'],
+                    if 'audio' not in format['format']:
+                        videoList[format['format_note']] = {"format": f"📹 {format['format_note']}", 'format_note': format['format_note'], 'filesize': format['filesize'],"format_id": format['format_id'],
                                     "yturl": yturl}
 
-        return r['title'], r['thumbnail'], videoList, audioList
+        return r['title'], r['thumbnail'], videoList
 
 
 def video_button(videos_list):
     keyboards = []
+    video_url = ""
     for item in videos_list.values():
-        keyboards.append(InlineKeyboardButton(item, callback_data=f"ytdata||video||{item['format_id']}||{item['yturl']}"))
+        video_url = item['yturl']
+        keyboards.append(InlineKeyboardButton(text=item['format'], callback_data=f"ytdata||video||{item['format_id']}||{item['yturl']}"))
     keyboards = [keyboards[i:i + 3] for i in range(0, len(keyboards), 3)]
-    keyboards = keyboards + [InlineKeyboardButton("🔉 MP3", callback_data=f"ytdata||audio||{item['format_id']}||{item['yturl']}")]
+    keyboards.append([InlineKeyboardButton(text="🔊 MP3", callback_data=f"ytdata||audio||{video_url}")])
 
     return keyboards
 
