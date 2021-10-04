@@ -2,17 +2,21 @@ from datetime import datetime, timedelta
 
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.errors.exceptions.bad_request_400 import WebpageCurlFailed
+from pyrogram.errors.exceptions.bad_request_400 import WebpageCurlFailed, MediaEmpty
 
 from bot import user_time
 from config import youtube_next_fetch
+
 from helper.ytdlfunc import extractYt, video_button
-from helper.instafunc import get_media_url
+from helper.instafunc import get_media_url, download_media
+from helper.ffmfunc import duration
 
 from wget import download
 from os import path, getcwd
 from PIL import Image
 from utils.util import humanbytes
+from aiofiles.os import remove
+
 
 ytregex = r"^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$"
 instaregex = r'^((?:https?:)?\/\/)?((?:www|m)\.)?((?:instagram\.com))(\/(?:p|tv|reel)/(?P<id>[^/?#&]+))'
@@ -53,11 +57,40 @@ async def ytdl(_, message: Message):
 
 @Client.on_message(filters.regex(instaregex))
 async def insta(_, message: Message):
-    media_url, is_video = await get_media_url(message.text)
+    try:
+        media_url, thumb_url, is_video = await get_media_url(message.text)
+    except:
+        await message.reply("Bunday manzil topilmadi!")
+        return
     if not is_video:
         await message.reply_photo(media_url)
     else:
+        img = await download_media(thumb_url)
+        im = Image.open(img).convert("RGB")
+        output_directory = path.join(getcwd(), "downloads", str(message.chat.id))
+        thumb_image_path = f"{output_directory}.jpg"
+        im.resize((320, 160))
+        im.save(thumb_image_path,"jpeg")
         try:
             await message.reply_video(media_url)
         except WebpageCurlFailed:
-            pass
+            file_name = await download_media(media_url)
+            media_duration = await duration(file_name)
+            
+            await message.reply_video(file_name, duration=int(media_duration), thumb=thumb_image_path)
+            await remove(file_name)
+            await remove(thumb_image_path)
+
+        except MediaEmpty:
+            file_name = await download_media(media_url)
+            media_duration = await duration(file_name)
+            await message.reply_video(file_name, duration=int(media_duration), thumb=thumb_image_path)
+            
+            try:
+                await remove(file_name)
+            except:
+                pass
+            try:
+                await remove(thumb_image_path)
+            except:
+                pass

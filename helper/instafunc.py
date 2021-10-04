@@ -1,8 +1,13 @@
+import tempfile
 from re import search
 from json import loads
 from urllib.parse import urlparse
 
 from aiohttp import ClientSession
+from aiohttp.client_reqrep import ClientResponse
+
+import aiofiles
+from utils.util import humanbytes
 
 
 header = {
@@ -36,14 +41,31 @@ async def get_media_url(video_url):
         data = next(group for group in datas.groups() if group is not None)
         media = loads(data)
         media_data = media['graphql']['shortcode_media']
-
         if media_data['is_video']:
             media_url = media_data["video_url"]
         else:
             media_url = media_data['display_url']
-
+        thumb_url = media_data['display_url']
+        
         replaced_url = urlparse(media_url).netloc
+
+        replaced_thumb_url = thumb_url.replace(replaced_url, 'scontent.cdninstagram.com', 1).strip()
 
         replaced_media_url = media_url.replace(replaced_url, 'scontent.cdninstagram.com', 1).strip()
 
-        return replaced_media_url, media_data['is_video']
+        return replaced_media_url, replaced_thumb_url, media_data['is_video']
+
+
+async def download_media(media_url):
+    async with ClientSession() as session:
+        async with session.get(media_url) as resp:
+            if resp.status == 200:
+                resp: ClientResponse = resp
+                conntent_type = '.mp4' if resp.content_type.startswith('video') else '.jpg'
+                tf = tempfile.NamedTemporaryFile(prefix="media_", suffix=conntent_type)
+                file_name = tf.name.replace('/tmp/', 'downloads/')
+
+                async with aiofiles.open(file_name, mode='wb') as f:
+                    await f.write(await resp.read())
+                
+                return file_name

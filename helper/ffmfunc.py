@@ -1,16 +1,10 @@
 import subprocess as sp
 import json
+import asyncio
 
+async def probe(vid_file_path):
 
-def probe(vid_file_path):
-    """
-    Give a json from ffprobe command line
-    @vid_file_path : The absolute (full) path of the video file, string.
-    """
-    if type(vid_file_path) != str:
-        raise Exception('Give ffprobe a full file path of the file')
-
-    command = ["ffprobe",
+    command_to_exec = ["ffprobe",
                "-loglevel", "quiet",
                "-print_format", "json",
                "-show_format",
@@ -18,16 +12,21 @@ def probe(vid_file_path):
                vid_file_path
                ]
 
-    pipe = sp.Popen(command, stdout=sp.PIPE, stderr=sp.STDOUT)
-    out, err = pipe.communicate()
+    process = await asyncio.create_subprocess_exec(
+        *command_to_exec,
+        # stdout must a pipe to be accessible as process.stdout
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE, )
+    out, err = await process.communicate()
+    
     return json.loads(out)
 
 
-def duration(vid_file_path):
+async def duration(vid_file_path):
     """
     Video's duration in seconds, return a float number
     """
-    _json = probe(vid_file_path)
+    _json = await probe(vid_file_path)
 
     if 'format' in _json:
         if 'duration' in _json['format']:
@@ -40,7 +39,3 @@ def duration(vid_file_path):
                 return float(s['duration'])
 
     raise Exception('duration Not found')
-
-
-if __name__ == "__main__":
-    print(duration("examplefile.mp4"))  # 10.008
