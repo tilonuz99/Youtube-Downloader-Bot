@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.errors.exceptions.bad_request_400 import WebpageCurlFailed
 
 from bot import user_time
 from config import youtube_next_fetch
@@ -56,4 +57,7 @@ async def insta(_, message: Message):
     if not is_video:
         await message.reply_photo(media_url)
     else:
-        await message.reply_video(media_url)
+        try:
+            await message.reply_video(media_url)
+        except WebpageCurlFailed:
+            pass
