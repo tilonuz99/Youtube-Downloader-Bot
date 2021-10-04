@@ -1,21 +1,20 @@
+from os import path, getcwd
 from datetime import datetime, timedelta
 
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors.exceptions.bad_request_400 import WebpageCurlFailed, MediaEmpty
 
-from bot import user_time
-from config import youtube_next_fetch
+from PIL import Image
+from aiofiles.os import remove
 
 from helper.ytdlfunc import extractYt, video_button
 from helper.instafunc import get_media_url, download_media
 from helper.ffmfunc import duration
 
-from wget import download
-from os import path, getcwd
-from PIL import Image
+from config import youtube_next_fetch, user_time
+
 from utils.util import humanbytes
-from aiofiles.os import remove
 
 
 ytregex = r"^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$"
@@ -33,12 +32,12 @@ async def ytdl(_, message: Message):
         pass
 
     user_time[message.chat.id] = datetime.now() + timedelta(seconds=30)
-    
+    analyze = await message.reply("Kuting...")
     url = message.text.strip()
     try:
         title, thumbnail, videolist = extractYt(url)
     except:
-        await message.reply("Bunday manzil topilmadi!")
+        await analyze.edit_text("Bunday manzil topilmadi!")
         return
     file_sizes = ""
     for video in videolist.values():
@@ -53,7 +52,11 @@ async def ytdl(_, message: Message):
     im = Image.open(img).convert("RGB")
     im.resize((320, 160))
     im.save(img,"jpeg")
-    await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
+    try:
+        await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
+        await analyze.delete()
+    except:
+        await analyze.edit_text("Yuklab bo'lmadi!")
 
 
 

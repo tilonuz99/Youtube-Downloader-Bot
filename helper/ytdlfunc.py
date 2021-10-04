@@ -9,7 +9,7 @@ from json import dumps
 
 # extract Youtube info
 def extractYt(yturl):
-    ydl = YoutubeDL({'cachedir': False})
+    ydl = YoutubeDL({'cachedir': False, 'quiet': True})
     with ydl:
         videoList = {}
 

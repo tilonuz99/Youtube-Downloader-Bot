@@ -1,5 +1,5 @@
-import asyncio
-import os
+from asyncio import get_event_loop
+from os import path, makedirs, getcwd, remove
 
 from pyrogram import (Client, ContinuePropagation, filters)
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaAudio, InputMediaVideo
@@ -23,7 +23,7 @@ async def catch_youtube_dldata(c, q):
     width = 360
     height = 340
 
-    if os.path.exists(thumb_image_path):
+    if path.exists(thumb_image_path):
         metadata = extractMetadata(createParser(thumb_image_path))
 
         if metadata.has("width"):
@@ -42,14 +42,13 @@ async def catch_youtube_dldata(c, q):
         raise ContinuePropagation
 
     filext = "%(title)s.%(ext)s"
-    userdir = os.path.join(os.getcwd(), "downloads", str(q.message.chat.id))
+    userdir = path.join(getcwd(), "downloads", str(q.message.chat.id))
 
-    if not os.path.isdir(userdir):
-        os.makedirs(userdir)
+    if not path.isdir(userdir):
+        makedirs(userdir)
     await q.edit_message_reply_markup(
         InlineKeyboardMarkup([[InlineKeyboardButton("Downloading...", callback_data="down")]]))
-    filepath = os.path.join(userdir, filext)
-    # await q.edit_message_reply_markup([[InlineKeyboardButton("Processing..")]])
+    filepath = path.join(userdir, filext)
 
     audio_command = [
         "youtube-dl",
@@ -71,7 +70,7 @@ async def catch_youtube_dldata(c, q):
         "-o", filepath,
         "--hls-prefer-ffmpeg", yturl]
 
-    loop = asyncio.get_event_loop()
+    loop = get_event_loop()
 
     med = None
     if cb_data.startswith("audio"):
@@ -79,8 +78,8 @@ async def catch_youtube_dldata(c, q):
         med = InputMediaAudio(
             media=filename,
             thumb=thumb_image_path,
-            caption=os.path.basename(filename),
-            title=os.path.basename(filename)
+            caption=path.basename(filename),
+            title=path.basename(filename)
         )
 
     if cb_data.startswith("video"):
@@ -92,7 +91,7 @@ async def catch_youtube_dldata(c, q):
             width=width,
             height=height,
             thumb=thumb_image_path,
-            caption=os.path.basename(filename),
+            caption=path.basename(filename),
             supports_streaming=True
         )
 
@@ -103,18 +102,16 @@ async def catch_youtube_dldata(c, q):
 
 
 async def send_file(c, q, med, filename):
-    print(med)
     try:
         await q.edit_message_reply_markup(
             InlineKeyboardMarkup([[InlineKeyboardButton("Uploading...", callback_data="down")]]))
         await c.send_chat_action(chat_id=q.message.chat.id, action="upload_video")
-        # this one is not working
         await q.edit_message_media(media=med)
     except Exception as e:
         print(e)
         await q.edit_message_text(e)
     finally:
         try:
-            os.remove(filename)
+            remove(filename)
         except:
             pass

@@ -1,7 +1,7 @@
 from pyrogram import Client
 import config
-
-DOWNLOAD_LOCATION = "./Downloads"
+from utils.database.models import connect_database
+DOWNLOAD_LOCATION = "./downloads"
 BOT_TOKEN = config.BOT_TOKEN
 
 APP_ID = config.APP_ID
@@ -18,5 +18,5 @@ Client(
     api_id=APP_ID,
     api_hash=API_HASH,
     plugins=plugins,
-    sleep_threshold=30
-).run()
+    sleep_threshold=180
+).run(connect_database())

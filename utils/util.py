@@ -1,3 +1,4 @@
+
 def humanbytes(num, suffix='B'):
     if num is None:
         num = 0
@@ -9,5 +10,3 @@ def humanbytes(num, suffix='B'):
             return "%3.2f %s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.2f %s%s" % (num, 'Yi', suffix)
-
-
