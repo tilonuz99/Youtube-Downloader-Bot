@@ -67,5 +67,4 @@ async def download_media(media_url):
 
                 async with aiofiles.open(file_name, mode='wb') as f:
                     await f.write(await resp.read())
-                
-                return file_name
+                    return file_name

@@ -18,5 +18,5 @@ Client(
     api_id=APP_ID,
     api_hash=API_HASH,
     plugins=plugins,
-    sleep_threshold=1
+    sleep_threshold=30
 ).run()

@@ -67,30 +67,34 @@ async def insta(_, message: Message):
     else:
         img = await download_media(thumb_url)
         im = Image.open(img).convert("RGB")
-        output_directory = path.join(getcwd(), "downloads", str(message.chat.id))
-        thumb_image_path = f"{output_directory}.jpg"
         im.resize((320, 160))
-        im.save(thumb_image_path,"jpeg")
+        im.save(img,"jpeg")
         try:
             await message.reply_video(media_url)
         except WebpageCurlFailed:
             file_name = await download_media(media_url)
             media_duration = await duration(file_name)
             
-            await message.reply_video(file_name, duration=int(media_duration), thumb=thumb_image_path)
-            await remove(file_name)
-            await remove(thumb_image_path)
+            await message.reply_video(file_name, duration=int(media_duration), thumb=img)
+            try:
+                await remove(file_name)
+            except:
+                pass
+            try:
+                await remove(img)
+            except:
+                pass
 
         except MediaEmpty:
             file_name = await download_media(media_url)
             media_duration = await duration(file_name)
-            await message.reply_video(file_name, duration=int(media_duration), thumb=thumb_image_path)
+            await message.reply_video(file_name, duration=int(media_duration), thumb=img)
             
             try:
                 await remove(file_name)
             except:
                 pass
             try:
-                await remove(thumb_image_path)
+                await remove(img)
             except:
                 pass
