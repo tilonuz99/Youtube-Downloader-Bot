@@ -14,7 +14,7 @@ from PIL import Image
 from utils.util import humanbytes
 
 ytregex = r"^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$"
-instaregex = r'^((?:https?:)?\/\/)?((?:www|m)\.)?((?:instagram\.com))(\/(?:p|tv|reel|stories)/(?P<id>[^/?#&]+))'
+instaregex = r'^((?:https?:)?\/\/)?((?:www|m)\.)?((?:instagram\.com))(\/(?:p|tv|reel)/(?P<id>[^/?#&]+))'
 
 @Client.on_message(filters.regex(ytregex))
 async def ytdl(_, message: Message):
