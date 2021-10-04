@@ -23,7 +23,6 @@ instaregex = r'^((?:https?:)?\/\/)?((?:www|m)\.)?((?:instagram\.com))(\/(?:p|tv|
 
 @Client.on_message(filters.regex(ytregex))
 async def ytdl(_, message: Message):
-    print(message.matches)
     userLastDownloadTime = user_time.get(message.chat.id)
     try:
         if userLastDownloadTime > datetime.now():
@@ -36,7 +35,11 @@ async def ytdl(_, message: Message):
     user_time[message.chat.id] = datetime.now() + timedelta(seconds=30)
     
     url = message.text.strip()
-    title, thumbnail, videolist = extractYt(url)
+    try:
+        title, thumbnail, videolist = extractYt(url)
+    except:
+        await message.reply("Bunday manzil topilmadi!")
+        return
     file_sizes = ""
     for video in videolist.values():
         file_size = video['filesize']
@@ -46,17 +49,29 @@ async def ytdl(_, message: Message):
             file_sizes += f"✅ {video['format_note']}:  {humanbytes(file_size)}\n"
     keyboard = video_button(videolist)
     buttons = InlineKeyboardMarkup(list(keyboard))
-    img = download(thumbnail, out=False)
+    img = await download_media(thumbnail)
     im = Image.open(img).convert("RGB")
-    output_directory = path.join(getcwd(), "downloads", str(message.chat.id))
-    thumb_image_path = f"{output_directory}.jpg"
-    im.save(thumb_image_path,"jpeg")
-    await message.reply_photo(thumb_image_path, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
+    im.resize((320, 160))
+    im.save(img,"jpeg")
+    await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
 
 
 
 @Client.on_message(filters.regex(instaregex))
 async def insta(_, message: Message):
+    userLastDownloadTime = user_time.get(message.chat.id)
+
+    try:
+        if userLastDownloadTime > datetime.now():
+            wait_time = round((userLastDownloadTime - datetime.now()).total_seconds())
+            await message.reply_text(f"`{wait_time} soniyadan so'ng qayta urining!`")
+            return
+        else:
+            user_time[message.chat.id] = datetime.now() + timedelta(seconds=30)
+
+    except:
+        pass
+    
     try:
         media_url, thumb_url, is_video = await get_media_url(message.text)
     except:

@@ -12,9 +12,11 @@ def extractYt(yturl):
     ydl = YoutubeDL({'cachedir': False})
     with ydl:
         videoList = {}
-        audioList = []
 
-        r = ydl.extract_info(yturl, download=False)
+        try:
+            r = ydl.extract_info(yturl, download=False)
+        except:
+            return None
         for format in r['formats']:
             if format['filesize'] is not None:
                 if not "dash" in str(format['format']).lower() and not "p60" in str(format['format']).lower() and not "p30" in str(format['format']).lower():
