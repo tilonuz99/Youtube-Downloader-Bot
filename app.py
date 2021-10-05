@@ -1,6 +1,12 @@
-from pyrogram import Client
-import config
+from asyncio import get_event_loop
+
+from pyrogram import Client, idle
+
+from tortoise import Tortoise, run_async
+
 from utils.database.models import connect_database
+import config
+
 DOWNLOAD_LOCATION = "./downloads"
 BOT_TOKEN = config.BOT_TOKEN
 
@@ -12,11 +18,25 @@ plugins = dict(
     root="plugins",
 )
 
-Client(
+client = Client(
     "YouTubeDlBot",
     bot_token=BOT_TOKEN,
     api_id=APP_ID,
     api_hash=API_HASH,
     plugins=plugins,
     sleep_threshold=180
-).run(connect_database())
+)
+
+
+async def main():
+    await client.start()
+    print("Starting...")
+    await connect_database()
+    await idle()
+
+
+if __name__ == "__main__":
+    try:
+        run_async(main())
+    except KeyboardInterrupt:
+        Tortoise.close_connections()

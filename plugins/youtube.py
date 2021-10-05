@@ -15,7 +15,7 @@ from helper.ffmfunc import duration
 from config import youtube_next_fetch, user_time
 
 from utils.util import humanbytes
-
+from utils.database.models import Youtube_videos, Video_formats, dowmloaded_media
 
 ytregex = r"^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$"
 instaregex = r'^((?:https?:)?\/\/)?((?:www|m)\.)?((?:instagram\.com))(\/(?:p|tv|reel)/(?P<id>[^/?#&]+))'
@@ -31,14 +31,24 @@ async def ytdl(_, message: Message):
     except:
         pass
 
-    user_time[message.chat.id] = datetime.now() + timedelta(seconds=30)
+    user_time[message.chat.id] = datetime.now() + timedelta(seconds=2)
     analyze = await message.reply("Kuting...")
     url = message.text.strip()
-    try:
-        title, thumbnail, videolist = extractYt(url)
-    except:
-        await analyze.edit_text("Bunday manzil topilmadi!")
+    video = await Youtube_videos.filter(video_url=url).first()
+
+    if video:
+        await message.reply("Bazada bor")
+        await message.reply_photo(video.thumbnail)
         return
+    else:
+        try:
+            title, thumbnail, videolist = extractYt(url)
+        except:
+            await analyze.edit_text("Bunday manzil topilmadi!")
+            return
+    
+    
+
     file_sizes = ""
     for video in videolist.values():
         file_size = video['filesize']
@@ -53,7 +63,9 @@ async def ytdl(_, message: Message):
     im.resize((320, 160))
     im.save(img,"jpeg")
     try:
-        await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
+        thumb_id = await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
+        await Youtube_videos.create(video_url=url, title=title, thumbnail=thumb_id.photo.file_id)
+
         await analyze.delete()
     except:
         await analyze.edit_text("Yuklab bo'lmadi!")

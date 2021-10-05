@@ -1,6 +1,5 @@
 from tortoise.models import Model
-from tortoise import fields
-
+from tortoise import fields, Tortoise
 
 class Users(Model):
     id = fields.BigIntField(pk=True)
@@ -13,6 +12,7 @@ class Admin_channels(Model):
 class Youtube_videos(Model):
     id = fields.BigIntField(pk=True)
     video_url = fields.TextField(max_length=255)
+    title = fields.TextField(max_length=255)
     thumbnail = fields.TextField(max_length=255)
 
 class Video_formats(Model):
@@ -25,5 +25,10 @@ class dowmloaded_media(Model):
     id = fields.BigIntField(pk=True)
     file_id = fields.TextField(max_length=255)
     video_id = fields.ForeignKeyField("models.Youtube_videos", related_name='downloaded_media')
-    
-    
+
+
+async def connect_database():
+    await Tortoise.init(
+        db_url="sqlite://database.db", modules={"models": [__name__]}
+    )
+    await Tortoise.generate_schemas()
