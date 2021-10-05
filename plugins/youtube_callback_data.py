@@ -43,10 +43,9 @@ async def catch_youtube_dldata(c, q: CallbackQuery):
 
     video_command = [
         "youtube-dl",
-        "-c",
-        "--embed-subs",
+        '-c',
         '-k',
-        "-f", f"{format_id}+bestaudio",
+        "-f", f"{format_id}",
         "--hls-prefer-ffmpeg", yturl,
         "-o", filepath
         ]
@@ -68,18 +67,19 @@ async def catch_youtube_dldata(c, q: CallbackQuery):
 
     if media_type == "video":
         filename = await downloadvideocli(video_command, filepath)
-        dur = round((await duration(filename)))
-        med = InputMediaVideo(
-            media=filename,
-            duration=dur,
-            thumb=thumb_image,
-            caption=path.basename(filename),
-            supports_streaming=True
-        )
+        # dur = round((await duration(filename)))
+        if filename:
+            print(filename)
+            med = InputMediaVideo(
+                media=filename,
+                # duration=dur,
+                thumb=thumb_image,
+                caption=path.basename(filename),
+                supports_streaming=True
+            )
 
     if med:
-        loop = get_event_loop()
-        loop.create_task(send_file(c, q, med, filename))
+        await send_file(c, q, med, filename)
     else:
         print("med not found")
 

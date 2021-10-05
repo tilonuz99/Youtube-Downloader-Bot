@@ -48,14 +48,15 @@ async def downloadvideocli(command_to_exec, filepath):
     stdout, stderr = await process.communicate()
 
     e_response = stderr.decode().strip()
-    t_response = stdout.decode()There aren't any subtitles to embed.strip()
+    t_response = stdout.decode()
 
     if e_response:
         print("Xtaolik:", e_response)
     elif t_response:
         print("Not error: ", t_response)
 
-    return filepath
+    file_name = t_response.split("Destination: ")[-1].strip()
+    return file_name
 
 async def downloadaudiocli(command_to_exec):
     process = await create_subprocess_exec(

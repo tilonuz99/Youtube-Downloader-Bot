@@ -17,7 +17,7 @@ async def probe(vid_file_path):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, )
     out, err = await process.communicate()
-    
+    print(out, err)
     return json.loads(out)
 
 
@@ -26,7 +26,7 @@ async def duration(vid_file_path):
     Video's duration in seconds, return a float number
     """
     _json = await probe(vid_file_path)
-
+    print(_json)
     if 'format' in _json:
         if 'duration' in _json['format']:
             return float(_json['format']['duration'])
