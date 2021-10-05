@@ -38,37 +38,49 @@ async def ytdl(_, message: Message):
 
     if video:
         await message.reply("Bazada bor")
-        await message.reply_photo(video.thumbnail)
+        video_formats = await Video_formats.filter(video_id=video.id).all()
+        file_sizes = ""
+        for videos in video_formats:
+            file_size = videos.file_size
+            if file_size > 2147483648:
+                file_sizes += f"🛑 {videos.format_type}:  {humanbytes(file_size)}\n"
+            else:
+                file_sizes += f"✅ {videos.format_type}:  {humanbytes(file_size)}\n"
+            
+        await message.reply_photo(video.thumbnail, caption=f"📹 {video.title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇")
         return
     else:
+        # try:
+        title, thumbnail, videolist = extractYt(url)
+        added_video = await Youtube_videos.create(video_url=url, title=title)
+
+        file_sizes = ""
+        for video in videolist.values():
+            file_size = video['filesize']
+            await Video_formats.create(format_type=video['format_note'], file_size=int(file_size), video_id=added_video.id)
+            if file_size > 2147483648:
+                file_sizes += f"🛑 {video['format_note']}:  {humanbytes(file_size)}\n"
+            else:
+                file_sizes += f"✅ {video['format_note']}:  {humanbytes(file_size)}\n"
+        keyboard = video_button(videolist)
+        buttons = InlineKeyboardMarkup(list(keyboard))
+        img = await download_media(thumbnail)
+        im = Image.open(img).convert("RGB")
+        im.resize((320, 160))
+        im.save(img,"jpeg")
         try:
-            title, thumbnail, videolist = extractYt(url)
-        except:
-            await analyze.edit_text("Bunday manzil topilmadi!")
-            return
-    
-    
+            thumb_id = await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
+            await Youtube_videos.filter(id=added_video.id).update(thumbnail=thumb_id.photo.file_id)
+            await analyze.delete()
+        except Exception as e:
+            print(e)
+            await analyze.edit_text("Yuklab bo'lmadi!")
+        # except Exception as e:
+        #     await analyze.edit_text("Bunday manzil topilmadi!:")
+        #     print(e)
+        #     return
 
-    file_sizes = ""
-    for video in videolist.values():
-        file_size = video['filesize']
-        if file_size > 2147483648:
-            file_sizes += f"🛑 {video['format_note']}:  {humanbytes(file_size)}\n"
-        else:
-            file_sizes += f"✅ {video['format_note']}:  {humanbytes(file_size)}\n"
-    keyboard = video_button(videolist)
-    buttons = InlineKeyboardMarkup(list(keyboard))
-    img = await download_media(thumbnail)
-    im = Image.open(img).convert("RGB")
-    im.resize((320, 160))
-    im.save(img,"jpeg")
-    try:
-        thumb_id = await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
-        await Youtube_videos.create(video_url=url, title=title, thumbnail=thumb_id.photo.file_id)
-
-        await analyze.delete()
-    except:
-        await analyze.edit_text("Yuklab bo'lmadi!")
+    
 
 
 
