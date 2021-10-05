@@ -15,7 +15,7 @@ from helper.ffmfunc import duration
 from config import youtube_next_fetch, user_time
 
 from utils.util import humanbytes
-from utils.database.models import Youtube_videos, Video_formats, dowmloaded_media
+from utils.database.models import Youtube_videos, Video_formats, Dowmloaded_media
 
 ytregex = r"^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$"
 instaregex = r'^((?:https?:)?\/\/)?((?:www|m)\.)?((?:instagram\.com))(\/(?:p|tv|reel)/(?P<id>[^/?#&]+))'
@@ -32,24 +32,33 @@ async def ytdl(_, message: Message):
         pass
 
     user_time[message.chat.id] = datetime.now() + timedelta(seconds=2)
-    analyze = await message.reply("Kuting...")
     url = message.text.strip()
     video = await Youtube_videos.filter(video_url=url).first()
 
     if video:
-        await message.reply("Bazada bor")
         video_formats = await Video_formats.filter(video_id=video.id).all()
         file_sizes = ""
+        videoList = {}
         for videos in video_formats:
+            is_downloaded = await Dowmloaded_media.filter(video_format_id=videos.id).first()
             file_size = videos.file_size
             if file_size > 2147483648:
                 file_sizes += f"🛑 {videos.format_type}:  {humanbytes(file_size)}\n"
+            elif is_downloaded:
+                file_sizes += f"🚀 {videos.format_type}:  {humanbytes(file_size)}\n"
             else:
                 file_sizes += f"✅ {videos.format_type}:  {humanbytes(file_size)}\n"
-            
-        await message.reply_photo(video.thumbnail, caption=f"📹 {video.title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇")
+
+            videoList[videos.format_type] = {"format": f"📹 {videos.format_type}", 'format_note': videos.format_type, 'filesize': videos.file_size, "format_id": videos.format_id}
+        
+        keyboard = video_button(videoList, video.id)
+        buttons = InlineKeyboardMarkup(list(keyboard))
+
+        await message.reply_photo(video.thumbnail, caption=f"📹 {video.title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
         return
     else:
+        analyze = await message.reply("Kuting...")
+
         # try:
         title, thumbnail, videolist = extractYt(url)
         added_video = await Youtube_videos.create(video_url=url, title=title)
@@ -57,12 +66,15 @@ async def ytdl(_, message: Message):
         file_sizes = ""
         for video in videolist.values():
             file_size = video['filesize']
-            await Video_formats.create(format_type=video['format_note'], file_size=int(file_size), video_id=added_video.id)
+
+            await Video_formats.create(format_type=video['format_note'], format_id=int(video['format_id']), file_size=int(file_size), video_id=added_video.id)
+
             if file_size > 2147483648:
                 file_sizes += f"🛑 {video['format_note']}:  {humanbytes(file_size)}\n"
             else:
                 file_sizes += f"✅ {video['format_note']}:  {humanbytes(file_size)}\n"
-        keyboard = video_button(videolist)
+
+        keyboard = video_button(videolist, added_video.id)
         buttons = InlineKeyboardMarkup(list(keyboard))
         img = await download_media(thumbnail)
         im = Image.open(img).convert("RGB")
@@ -70,8 +82,8 @@ async def ytdl(_, message: Message):
         im.save(img,"jpeg")
         try:
             thumb_id = await message.reply_photo(img, caption=f"📹 {title}\n\n{file_sizes}\n\n❔ Iltimos, fayl turini tanlang: 👇", reply_markup=buttons)
-            await Youtube_videos.filter(id=added_video.id).update(thumbnail=thumb_id.photo.file_id)
             await analyze.delete()
+            await Youtube_videos.filter(id=added_video.id).update(thumbnail=thumb_id.photo.file_id)
         except Exception as e:
             print(e)
             await analyze.edit_text("Yuklab bo'lmadi!")

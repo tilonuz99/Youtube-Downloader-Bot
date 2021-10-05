@@ -22,13 +22,15 @@ class Youtube_videos(Model):
 class Video_formats(Model):
     id = fields.BigIntField(pk=True)
     format_type = fields.TextField(max_length=200)
+    format_id = fields.BigIntField()
     file_size = fields.BigIntField()
     video = fields.ForeignKeyField("models.Youtube_videos", related_name='video_format')
 
-class dowmloaded_media(Model):
+class Dowmloaded_media(Model):
     id = fields.BigIntField(pk=True)
     file_id = fields.TextField(max_length=255)
     video = fields.ForeignKeyField("models.Youtube_videos", related_name='downloaded_media')
+    video_format = fields.ForeignKeyField("models.Video_formats", related_name='format')
 
 
 async def connect_database():

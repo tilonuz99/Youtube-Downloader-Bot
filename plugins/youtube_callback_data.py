@@ -1,54 +1,33 @@
 from asyncio import get_event_loop
 from os import path, makedirs, getcwd, remove
+from tempfile import NamedTemporaryFile
+
 
 from pyrogram import (Client, ContinuePropagation, filters)
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaAudio, InputMediaVideo
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaAudio, InputMediaVideo, CallbackQuery
 
 from helper.ffmfunc import duration
 from helper.ytdlfunc import downloadvideocli, downloadaudiocli
 from PIL.Image import open
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
+from utils.database.models import Youtube_videos
 
 
 @Client.on_callback_query()
-async def catch_youtube_dldata(c, q):
+async def catch_youtube_dldata(c, q: CallbackQuery):
     cb_data = q.data.strip()
-
-    yturl = cb_data.split("||")[-1]
+    media_type = cb_data.split("||")[1]
+    video_id = cb_data.split("||")[-1]
     format_id = cb_data.split("||")[-2]
-    thumb_image_path = "downloads" + \
-        "/" + str(q.message.chat.id) + ".jpg"
-    print(thumb_image_path)
-    width = 360
-    height = 340
+    
+    thumb_image = q.message.photo.file_id
+    video = await Youtube_videos.filter(id=int(video_id)).first()
 
-    if path.exists(thumb_image_path):
-        metadata = extractMetadata(createParser(thumb_image_path))
+    tf = NamedTemporaryFile(prefix="media_", suffix=".%(ext)s")
+    filepath = tf.name.replace('/tmp/', '')
 
-        if metadata.has("width"):
-            width = metadata.get("width")
-        if metadata.has("height"):
-            height = metadata.get("height")
-        img = open(thumb_image_path)
-        if cb_data.startswith("audio"):
-            img.resize((320, height))
-        else:
-            img.resize((90, height))
-        img.save(thumb_image_path, "JPEG")
-
-    if not cb_data.startswith(("video", "audio")):
-        print("no data found")
-        raise ContinuePropagation
-
-    filext = "%(title)s.%(ext)s"
-    userdir = path.join(getcwd(), "downloads", str(q.message.chat.id))
-
-    if not path.isdir(userdir):
-        makedirs(userdir)
-    await q.edit_message_reply_markup(
-        InlineKeyboardMarkup([[InlineKeyboardButton("Downloading...", callback_data="down")]]))
-    filepath = path.join(userdir, filext)
+    yturl = video.video_url
 
     audio_command = [
         "youtube-dl",
@@ -56,7 +35,7 @@ async def catch_youtube_dldata(c, q):
         "--prefer-ffmpeg",
         "--extract-audio",
         "--audio-format", "mp3",
-        "--audio-quality", format_id,
+        "--audio-quality", "bestaudio",
         "-o", filepath,
         yturl,
 
@@ -66,36 +45,40 @@ async def catch_youtube_dldata(c, q):
         "youtube-dl",
         "-c",
         "--embed-subs",
+        '-k',
         "-f", f"{format_id}+bestaudio",
-        "-o", filepath,
-        "--hls-prefer-ffmpeg", yturl]
+        "--hls-prefer-ffmpeg", yturl,
+        "-o", filepath
+        ]
 
-    loop = get_event_loop()
+    video_command.append("--no-warnings")
+    video_command.append("--restrict-filenames")
+
+    
 
     med = None
-    if cb_data.startswith("audio"):
+    if media_type == "audio":
         filename = await downloadaudiocli(audio_command)
         med = InputMediaAudio(
             media=filename,
-            thumb=thumb_image_path,
+            thumb=thumb_image,
             caption=path.basename(filename),
             title=path.basename(filename)
         )
 
-    if cb_data.startswith("video"):
-        filename = await downloadvideocli(video_command)
-        dur = round(duration(filename))
+    if media_type == "video":
+        filename = await downloadvideocli(video_command, filepath)
+        dur = round((await duration(filename)))
         med = InputMediaVideo(
             media=filename,
             duration=dur,
-            width=width,
-            height=height,
-            thumb=thumb_image_path,
+            thumb=thumb_image,
             caption=path.basename(filename),
             supports_streaming=True
         )
 
     if med:
+        loop = get_event_loop()
         loop.create_task(send_file(c, q, med, filename))
     else:
         print("med not found")

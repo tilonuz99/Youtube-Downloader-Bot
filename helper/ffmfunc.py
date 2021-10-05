@@ -1,6 +1,5 @@
-import subprocess as sp
 import json
-import asyncio
+from asyncio import create_subprocess_exec, subprocess
 
 async def probe(vid_file_path):
 
@@ -12,11 +11,11 @@ async def probe(vid_file_path):
                vid_file_path
                ]
 
-    process = await asyncio.create_subprocess_exec(
+    process = await create_subprocess_exec(
         *command_to_exec,
         # stdout must a pipe to be accessible as process.stdout
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE, )
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, )
     out, err = await process.communicate()
     
     return json.loads(out)
