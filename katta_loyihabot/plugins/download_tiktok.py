@@ -19,8 +19,10 @@ options_down = {
 
 @Client.on_message()
 async def send_video(client: Client, message: Message):
-
-    task1 = gather(get_video_url(message))
+    if message.text and message.text == '/start':
+        await message.reply("Salom, menga shunchaki tiktokdagi siz yoqtirgan video havolisini yuboring va men sizga o'sha videoni suv belgisiz yuboraman)")
+    else:
+        gather(get_video_url(message))
 
 async def get_video_url(message):
     url = message.text
@@ -28,12 +30,12 @@ async def get_video_url(message):
     if url.startswith("https://vm.tiktok.com"):
         post_id = url.replace("https://vm.tiktok.com/", '')
         post_id = post_id.replace('/', '')
+    elif "@" in url and "/video/" in url:
+        post_id = url.split("/video/")[1].split("?")[0]
     elif url.startswith("https://m.tiktok.com/v/"):
         find = findall("((?:https?:\/\/(?:www|m|vm)\.))?((?:tiktok\.com))(?:/v/([a-zA-Z0-9]+)|(?P<id>[a-zA-Z0-9])+)",
                     url)
         post_id = find[0][2]
-    elif "@" in url and "/video/" in url:
-        post_id = url.split("/video/")[1].split("?")[0]
     else:
         await message.reply("Video topilmadi!")
         return
