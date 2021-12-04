@@ -4,6 +4,7 @@ from pyrogram import Client, idle
 
 from tortoise import Tortoise, run_async
 import config
+from utils.database.models import connect_database
 
 DOWNLOAD_LOCATION = "./downloads"
 BOT_TOKEN = config.BOT_TOKEN
@@ -29,7 +30,7 @@ client = Client(
 async def main():
     await client.start()
     print("Starting...")
-    # await connect_database()
+    await connect_database()
     await idle()
 
 
