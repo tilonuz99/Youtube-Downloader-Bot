@@ -20,7 +20,7 @@ options_down = {
 @Client.on_message()
 async def send_video(client: Client, message: Message):
     if message.text and message.text == '/start':
-        await message.reply("Salom, menga shunchaki tiktokdagi siz yoqtirgan video havolisini yuboring va men sizga o'sha videoni suv belgisiz yuboraman)")
+        await message.reply("Salom, menga shunchaki TikTokdagi siz yoqtirgan video havolisini yuboring va men sizga o'sha videoni suv belgisiz yuboraman)")
     else:
         gather(get_video_url(message))
 
@@ -37,14 +37,14 @@ async def get_video_url(message):
                     url)
         post_id = find[0][2]
     else:
-        await message.reply("Video topilmadi!")
+        await message.reply("Video topilmadi!", True)
         return
     video = await TikTok_videos.filter(Q(video_url=url) | Q(video_id=post_id)).first()
     if video:
-        await message.reply_video(video.file_id)
+        await message.reply_video(video.file_id, True)
         return
     else:
-        need_wait = await message.reply("Kuting...")
+        need_wait = await message.reply("Kuting...", True)
     with YoutubeDL(options_down) as ydl:
         video_info = ydl.extract_info(message.text, False)
         video_formats = video_info.get("formats")
@@ -52,12 +52,12 @@ async def get_video_url(message):
             if formate.get("format_note") in ["Direct video (API)", "Direct video"]:
                 try:
                     await need_wait.delete()
-                    file = await message.reply_video(formate.get('url'))
+                    file = await message.reply_video(formate.get('url'), True)
                     await TikTok_videos.create(video_url=url, video_id=post_id, file_id=file.video.file_id)
                     break
                 except Exception as e:
                     try:
                         await need_wait.edit_text("Videoni yuklab olib bo'lmadi!")
                     except:
-                        await message.reply("Videoni yuklab olib bo'lmadi!")
+                        await message.reply("Videoni yuklab olib bo'lmadi!", True)
                     return

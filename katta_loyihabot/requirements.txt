@@ -1,0 +1,4 @@
+yt_dlp
+pyrogram
+tgcrypto
+tortoise-orm
