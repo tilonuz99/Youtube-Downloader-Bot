@@ -1,5 +1,6 @@
 from asyncio import gather
 from os import path, remove
+from re import findall
 
 from pyrogram import Client
 
@@ -23,7 +24,18 @@ async def send_video(client: Client, message: Message):
     task1 = gather(get_video_url(message, need_wait))
 
 async def get_video_url(message, need_wait):
-    video = await TikTok_videos.filter(Q(video_url=url)).first()
+    url = message.text
+
+    if "@" in url and "/video/" in url:
+        post_id = url.split("/video/")[1].split("?")[0]
+    else:
+        find = findall("(?:http[s]?:\/\/)?(www|m|vm\.tiktok\.com\/)([a-zA-Z0-9]+)", "https://vm.tiktok.com/ZSeUYgAv7/")
+        if len(ok) > 0:
+            post_id = find[0][1]
+        else:
+            await need_wait.edit_text("Topilmadi!")
+            return
+    video = await TikTok_videos.filter(Q(video_url=url) | Q(video_id=post_id)).first()
     if video:
         print("Bazada bor")
 
